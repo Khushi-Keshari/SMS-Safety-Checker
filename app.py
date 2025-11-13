@@ -2,80 +2,53 @@ import streamlit as st
 import pickle
 import string
 import nltk
-
-# Download NLTK resources
-nltk.download('punkt')
-nltk.download('stopwords')
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
+# Download required NLTK data
+nltk.download('punkt')
+nltk.download('stopwords')
+
 ps = PorterStemmer()
 
-# Function to transform text
+# Text preprocessing function
 def transform_text(text):
     text = text.lower()
     text = nltk.word_tokenize(text)
-
-    # Remove non-alphanumeric characters
     text = [i for i in text if i.isalnum()]
-
-    # Remove stopwords and punctuation
     text = [i for i in text if i not in stopwords.words('english') and i not in string.punctuation]
-
-    # Apply stemming
     text = [ps.stem(i) for i in text]
-
     return " ".join(text)
 
-# Load models
-vectorizer_path = 'vectorizer.pkl'
-model_path = 'model.pkl'
+# ✅ Load the trained pipeline (which already includes vectorizer + model)
+with open('sms_pipeline.pkl', 'rb') as f:
+    pipeline = pickle.load(f)
 
-# Loading vectorizer and model with error handling
-try:
-    with open(vectorizer_path, 'rb') as vectorizer_file:
-        tfidf = pickle.load(vectorizer_file)
-except Exception as e:
-    st.error(f"Error loading vectorizer: {e}")
+# Streamlit UI
+st.title("📩 SMS Classifier (Spam Detector)")
 
-try:
-    with open(model_path, 'rb') as model_file:
-        model = pickle.load(model_file)
-except Exception as e:
-    st.error(f"Error loading model: {e}")
+# Use session_state to store the input value
+if "input_sms" not in st.session_state:
+    st.session_state.input_sms = ""
 
-# Streamlit UI with background image
-st.markdown(
-    """
-    <style>
-        body {
-            background-image: url('https://your_website.com/your_image_path.jpg'); /* Replace with your image URL */
-            background-size: cover;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# Streamlit UI components
-st.title("SMS Classifier")
-
-input_sms = st.text_area("Enter the message", height=100)
+input_sms = st.text_area("Enter the message", value=st.session_state.input_sms, height=100)
 
 if st.button('Check'):
     if input_sms:
         try:
             # 1. Preprocess
             transformed_sms = transform_text(input_sms)
-            # 2. Vectorize
-            vector_input = tfidf.transform([transformed_sms])
-            # 3. Predict
-            result = model.predict(vector_input)[0]
-            # 4. Display result
+            # 2. Predict using pipeline directly
+            result = pipeline.predict([transformed_sms])[0]
+            # 3. Display result
             if result == 1:
-                st.error("Spam")
+                st.error("🚨 Spam Message Detected!")
             else:
-                st.success("Not Spam")
+                st.success("✅ This looks like a normal message.")
+
+            # ✅ Reset the text area after checking
+            st.session_state.input_sms = ""
+           
         except Exception as e:
             st.error(f"Error processing input: {e}")
     else:
