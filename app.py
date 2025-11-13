@@ -1,20 +1,37 @@
 import streamlit as st
 import nltk
-# Download required NLTK data
-nltk.download('punkt')
-nltk.download('stopwords')
+import os
 import pickle
 import string
-
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
+# -----------------------------
+# ✅ Setup NLTK for Streamlit
+# -----------------------------
+nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
+if not os.path.exists(nltk_data_path):
+    os.mkdir(nltk_data_path)
 
+nltk.data.path.append(nltk_data_path)
 
+# Download required NLTK data quietly
+nltk.download('punkt', download_dir=nltk_data_path, quiet=True)
+nltk.download('stopwords', download_dir=nltk_data_path, quiet=True)
+
+# -----------------------------
+# ✅ Text preprocessing
+# -----------------------------
 ps = PorterStemmer()
 
-# Text preprocessing function
 def transform_text(text):
+    """
+    Preprocess input text:
+    - Lowercase
+    - Tokenize
+    - Remove punctuation & stopwords
+    - Apply stemming
+    """
     text = text.lower()
     text = nltk.word_tokenize(text)
     text = [i for i in text if i.isalnum()]
@@ -22,14 +39,18 @@ def transform_text(text):
     text = [ps.stem(i) for i in text]
     return " ".join(text)
 
-# ✅ Load the trained pipeline (which already includes vectorizer + model)
+# -----------------------------
+# ✅ Load trained pipeline
+# -----------------------------
 with open('sms_pipeline.pkl', 'rb') as f:
     pipeline = pickle.load(f)
 
-# Streamlit UI
+# -----------------------------
+# ✅ Streamlit UI
+# -----------------------------
 st.title("📩 SMS Classifier (Spam Detector)")
 
-# Use session_state to store the input value
+# Use session_state to store input
 if "input_sms" not in st.session_state:
     st.session_state.input_sms = ""
 
