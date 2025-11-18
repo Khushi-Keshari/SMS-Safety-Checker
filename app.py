@@ -1,5 +1,6 @@
 import streamlit as st
 import nltk
+import re
 import os
 import pickle
 import string
@@ -33,8 +34,9 @@ def transform_text(text):
     - Apply stemming
     """
     text = text.lower()
+    text = re.sub(r"http\S+|www\S+|https\S+", "url", text)
     text = nltk.word_tokenize(text)
-    text = [i for i in text if i.isalnum()]
+    text = [i for i in text if i.isalnum() or i in "%$!"]
     text = [i for i in text if i not in stopwords.words('english') and i not in string.punctuation]
     text = [ps.stem(i) for i in text]
     return " ".join(text)
